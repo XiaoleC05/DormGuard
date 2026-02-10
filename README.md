@@ -43,6 +43,9 @@
 3. **告警通知** - 余额低于阈值时自动发送邮件或QQ消息
 4. **监控面板** - Web界面查看电费状态、趋势图和用电量统计
 5. **手动刷新** - 支持手动触发数据获取
+6. **多用户系统** - 学生注册登录，提交宿舍信息，自主管理监控
+7. **管理员系统** - 管理员账号密码登录，管理用户和监控
+8. **安全机制** - 学生确认机制防止错误提交，登录失败限制，Session管理
 
 ---
 
@@ -55,6 +58,10 @@
 - ✅ **易于部署**：支持本地部署和云服务器部署
 - ✅ **分类监控**：支持空调和照明分别设置阈值和告警
 - ✅ **防频繁告警**：1小时内不重复告警（手动触发除外）
+- ✅ **多用户支持**：学生可注册账号，提交自己的宿舍信息
+- ✅ **安全确认**：学生提交后需确认电费数据，防止误填其他宿舍
+- ✅ **提交限制**：同一邮箱每天最多提交3次，防止恶意提交
+- ✅ **管理员管理**：管理员可管理用户、审批多宿舍申请
 
 ---
 
@@ -74,6 +81,9 @@
 | Requests | 2.31+ | HTTP请求库，用于爬虫 |
 | BeautifulSoup4 | 4.12+ | HTML解析（备用） |
 | python-dotenv | 1.0+ | 环境变量管理 |
+| passlib[bcrypt] | 1.7+ | 密码哈希加密 |
+| python-jose | 3.3+ | JWT Token支持（备用） |
+| itsdangerous | 2.1+ | Session签名支持 |
 
 ### 前端技术
 
@@ -103,12 +113,21 @@ dorm-power-guard-lite/
 │   │   ├── api/            # API路由
 │   │   │   ├── power.py   # 电费记录API
 │   │   │   ├── alert.py   # 告警API
-│   │   │   └── system.py  # 系统管理API
+│   │   │   ├── system.py  # 系统管理API
+│   │   │   ├── auth.py    # 认证API（用户/管理员登录）
+│   │   │   ├── submissions.py # 宿舍提交API
+│   │   │   ├── multi_dorm.py  # 多宿舍申请API
+│   │   │   ├── my_monitor.py  # 我的监控API
+│   │   │   ├── admin.py       # 管理员管理API
+│   │   │   └── admin_users.py # 管理员用户管理API
 │   │   ├── models.py       # 数据库模型（SQLAlchemy）
 │   │   ├── schemas.py      # Pydantic模型（数据验证）
 │   │   ├── services.py     # 业务逻辑层
 │   │   ├── crawler.py      # 爬虫模块
-│   │   ├── auth_manager.py # 认证管理模块
+│   │   ├── auth_manager.py # 认证管理模块（爬虫认证）
+│   │   ├── auth.py         # 认证服务（密码哈希、登录限制）
+│   │   ├── session.py      # Session管理
+│   │   ├── email_service.py # 邮件服务（验证邮件、密码重置）
 │   │   ├── alert.py        # 告警模块
 │   │   ├── scheduler.py    # 定时任务模块
 │   │   ├── templates.py    # 邮件模板
@@ -118,6 +137,8 @@ dorm-power-guard-lite/
 │   ├── requirements.txt    # Python依赖
 │   ├── .env.example        # 环境变量示例
 │   ├── init_db.sql         # 数据库初始化SQL
+│   ├── migrate_add_user_system.py # 用户系统数据库迁移脚本
+│   ├── create_admin.py     # 创建管理员账号脚本
 │   ├── run.py              # 启动脚本
 │   ├── start.bat           # Windows启动脚本
 │   └── start.ps1           # PowerShell启动脚本
@@ -188,6 +209,20 @@ mysql -u root -p
 ```sql
 CREATE DATABASE dorm_power_guard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EXIT;
+```
+
+#### 3.2.1 执行用户系统数据库迁移
+
+```bash
+python migrate_add_user_system.py
+```
+
+这会创建用户系统相关的表（users, admins, dorm_submissions等）。
+
+#### 3.2.2 创建管理员账号
+
+```bash
+python create_admin.py --username admin --password your_password --email admin@example.com --role super_admin
 ```
 
 #### 3.3 配置环境变量
@@ -334,6 +369,11 @@ EMAIL_FROM=1270667498@qq.com
 
 # 默认接收邮箱（可选，告警规则中配置的邮箱优先级更高）
 EMAIL_TO=
+
+# 应用基础URL（用于生成邮件中的链接）
+BASE_URL=http://localhost:3000  # 开发环境
+# 或
+BASE_URL=https://yourdomain.com  # 生产环境
 ```
 
 #### 4.3 配置告警规则
@@ -509,6 +549,29 @@ mitmproxy -p 8888
 
 可在 `.env` 文件中修改 `SCHEDULER_HOURS` 配置。
 
+### 6. 用户系统功能
+
+#### 6.1 学生功能
+
+- **注册登录**：邮箱注册，邮箱验证，密码登录
+- **提交宿舍信息**：填写宿舍信息，系统立即抓取电费数据，学生确认后激活监控
+- **我的监控**：查看自己的监控列表，查看电费记录，修改告警规则
+- **多宿舍申请**：申请监控多个宿舍，等待管理员审批
+
+#### 6.2 管理员功能
+
+- **管理员登录**：账号密码登录
+- **用户管理**：查看用户列表，启用/禁用用户
+- **监控管理**：查看所有监控，编辑告警规则，手动触发抓取
+- **多宿舍审批**：审批学生的多宿舍申请
+
+#### 6.3 安全机制
+
+- **学生确认机制**：提交后立即显示电费数据，学生确认后才激活，防止误填其他宿舍
+- **提交限制**：同一邮箱每天最多提交3次
+- **登录失败限制**：5次失败后锁定30分钟
+- **Session管理**：7天自动过期，支持登出
+
 ### 告警功能
 
 - **邮件告警**：使用QQ邮箱发送告警邮件到指定邮箱
@@ -577,7 +640,63 @@ curl -X POST http://localhost:8000/api/alert/rules \
   }'
 ```
 
-#### 3. 系统管理API
+#### 3. 用户认证API
+
+- `POST /api/auth/register` - 用户注册
+- `POST /api/auth/login` - 用户登录
+- `POST /api/auth/verify-email` - 验证邮箱
+- `POST /api/auth/logout` - 登出
+- `GET /api/auth/me` - 获取当前用户信息
+- `POST /api/auth/forgot-password` - 忘记密码
+- `POST /api/auth/reset-password` - 重置密码
+
+#### 4. 宿舍提交API
+
+- `POST /api/submissions` - 提交宿舍信息
+- `GET /api/submissions/{id}` - 获取提交详情
+- `POST /api/submissions/{id}/confirm` - 确认提交
+- `GET /api/submissions/my/list` - 我的提交列表
+- `GET /api/submissions/check-limit` - 检查提交限制
+
+#### 5. 多宿舍申请API
+
+- `POST /api/multi-dorm/request` - 提交多宿舍申请
+- `GET /api/multi-dorm/my-requests` - 我的申请列表
+
+#### 6. 我的监控API
+
+- `GET /api/my/monitors` - 我的监控列表
+- `GET /api/my/power-records/{dorm_number}` - 我的电费记录
+- `PUT /api/my/alert-rules/{dorm_number}` - 更新告警规则
+
+#### 7. 管理员认证API
+
+- `POST /api/auth/admin/login` - 管理员登录
+- `POST /api/auth/admin/logout` - 管理员登出
+- `GET /api/auth/admin/me` - 获取当前管理员信息
+
+#### 8. 管理员管理API
+
+- `GET /api/admin/admins` - 管理员列表
+- `POST /api/admin/admins` - 创建管理员（需要超级管理员）
+- `PUT /api/admin/admins/{id}` - 更新管理员（需要超级管理员）
+- `DELETE /api/admin/admins/{id}` - 删除管理员（需要超级管理员）
+- `POST /api/admin/change-password` - 修改密码
+
+#### 9. 管理员用户管理API
+
+- `GET /api/admin/users` - 用户列表
+- `GET /api/admin/users/{id}` - 用户详情
+- `PUT /api/admin/users/{id}/status` - 更新用户状态
+
+#### 10. 管理员多宿舍申请管理API
+
+- `GET /api/multi-dorm/admin/requests` - 申请列表
+- `GET /api/multi-dorm/admin/requests/{id}` - 申请详情
+- `PUT /api/multi-dorm/admin/requests/{id}/approve` - 批准申请
+- `PUT /api/multi-dorm/admin/requests/{id}/reject` - 拒绝申请
+
+#### 11. 系统管理API
 
 - `POST /api/system/crawl` - 手动触发爬虫任务
 
@@ -635,6 +754,8 @@ CREATE INDEX idx_record_time ON power_records(record_time);
 ALTER TABLE alert_rules ADD UNIQUE KEY uk_dorm_number (dorm_number);
 ```
 
+**注意**：`alert_rules` 表已更新，添加了 `user_id` 和 `dorm_submission_id` 字段，用于关联用户和提交记录。
+
 #### 3. `alert_logs` - 告警日志表
 
 | 字段 | 类型 | 说明 |
@@ -648,6 +769,89 @@ ALTER TABLE alert_rules ADD UNIQUE KEY uk_dorm_number (dorm_number);
 | alert_status | VARCHAR(20) | 告警状态（success=成功，failed=失败） |
 | alert_message | TEXT | 告警消息 |
 | created_at | DATETIME | 创建时间 |
+
+#### 4. `users` - 用户表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT | 主键，自增 |
+| email | VARCHAR(255) | 邮箱（唯一） |
+| password_hash | VARCHAR(255) | 密码哈希 |
+| email_verified | BOOLEAN | 邮箱是否已验证 |
+| email_verification_code | VARCHAR(50) | 邮箱验证码 |
+| email_verified_at | DATETIME | 邮箱验证时间 |
+| status | VARCHAR(20) | 状态：pending/active/banned |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+#### 5. `admins` - 管理员表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT | 主键，自增 |
+| username | VARCHAR(50) | 管理员账号（唯一） |
+| password_hash | VARCHAR(255) | 密码哈希 |
+| email | VARCHAR(255) | 邮箱（可选） |
+| nickname | VARCHAR(100) | 昵称 |
+| role | VARCHAR(20) | 角色：admin/super_admin |
+| status | VARCHAR(20) | 状态：active/banned |
+| created_at | DATETIME | 创建时间 |
+| last_login_at | DATETIME | 最后登录时间 |
+
+#### 6. `dorm_submissions` - 宿舍提交表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT | 主键，自增 |
+| user_id | INT | 用户ID（外键） |
+| dorm_number | VARCHAR(50) | 宿舍号 |
+| room_id | INT | 房间ID |
+| kbalance | FLOAT | 提交时的空调余量（用于确认） |
+| zbalance | FLOAT | 提交时的照明余量（用于确认） |
+| status | VARCHAR(20) | 状态：pending_confirmation/confirmed/active/rejected |
+| confirmed_at | DATETIME | 确认时间 |
+| alert_rule_id | INT | 关联的告警规则ID |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+#### 7. `submission_limits` - 提交限制表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT | 主键，自增 |
+| email | VARCHAR(255) | 邮箱 |
+| submission_date | DATE | 提交日期 |
+| submission_count | INT | 提交次数 |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+#### 8. `multi_dorm_requests` - 多宿舍申请表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT | 主键，自增 |
+| user_id | INT | 用户ID（外键） |
+| dorm_number | VARCHAR(50) | 宿舍号 |
+| room_id | INT | 房间ID |
+| reason | TEXT | 申请理由 |
+| status | VARCHAR(20) | 状态：pending/approved/rejected |
+| admin_id | INT | 处理的管理员ID |
+| processed_at | DATETIME | 处理时间 |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+#### 9. `login_attempts` - 登录尝试记录表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT | 主键，自增 |
+| identifier | VARCHAR(255) | 标识符（邮箱或用户名） |
+| attempt_type | VARCHAR(20) | 尝试类型：user/admin |
+| failed_count | INT | 失败次数 |
+| last_attempt_at | DATETIME | 最后尝试时间 |
+| locked_until | DATETIME | 锁定到期时间 |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
 
 ---
 
@@ -973,6 +1177,33 @@ tail -f backend/logs/app.log
 4. 手动触发爬虫测试：`POST /api/system/crawl`
 5. 查看告警日志页面
 
+### Q12: 如何测试后端功能？
+
+**A**: 
+1. 执行数据库迁移：`python migrate_add_user_system.py`
+2. 创建管理员账号：`python create_admin.py --username admin --password admin123`
+3. 启动服务：`python run.py`
+4. 访问API文档：http://localhost:8000/docs
+5. 使用Swagger UI测试各个接口
+
+### Q13: 学生提交宿舍信息时如何防止误填？
+
+**A**: 
+1. 学生提交后，系统立即抓取电费数据
+2. 显示当前电费余额（空调余量、照明余量）
+3. 学生需要确认"这是我宿舍的电费"
+4. 确认后才激活监控
+5. 如果填错了，看到的数据不对，就不会确认
+
+### Q14: 如何申请监控多个宿舍？
+
+**A**: 
+1. 学生提交多宿舍申请（填写宿舍号和申请理由）
+2. 管理员审批申请（批准/拒绝）
+3. 如果批准，系统创建待确认的提交记录
+4. 学生需要确认提交（显示电费数据）
+5. 确认后激活监控
+
 ---
 
 ## 联系与支持
@@ -986,6 +1217,17 @@ tail -f backend/logs/app.log
 ---
 
 ## 更新日志
+
+- **v2.0.0** - 多用户系统版本
+  - 新增用户注册/登录系统（邮箱+密码）
+  - 新增管理员系统（账号密码登录）
+  - 新增宿舍提交功能（学生提交，确认后激活）
+  - 新增多宿舍申请功能（学生申请，管理员审批）
+  - 新增我的监控功能（查看列表，修改规则）
+  - 新增邮件服务（邮箱验证、密码重置）
+  - 新增安全机制（学生确认、提交限制、登录失败限制）
+  - 完善Session管理
+  - 完善管理员管理功能
 
 - **v1.0.0** - 初始版本
   - 支持西华大学一卡通系统
@@ -1010,4 +1252,5 @@ MIT License
 **开发说明**：本项目为开源项目，欢迎提交Issue和Pull Request。  
 **注意**：本项目仅用于学习和个人使用，请遵守西华大学相关规定，不得用于商业用途。
 
-**技术知识点文档**：详细的技术栈和使用方法请参考 `技术知识点文档.md`
+**技术知识点文档**：详细的技术栈和使用方法请参考 `技术知识点文档.md`  
+**开发日志**：开发历史和版本记录请参考 `开发日志.md`
