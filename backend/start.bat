@@ -20,6 +20,7 @@ REM 检查Python
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [错误] 未检测到Python
+    echo 请确保Python已安装并添加到PATH环境变量
     pause
     exit /b 1
 )
@@ -31,6 +32,7 @@ if errorlevel 1 (
     python -m pip install -r requirements.txt
     if errorlevel 1 (
         echo [错误] 依赖安装失败
+        echo 请检查网络连接或手动运行: pip install -r requirements.txt
         pause
         exit /b 1
     )
@@ -38,10 +40,16 @@ if errorlevel 1 (
 
 echo [2/2] 启动服务...
 echo.
-echo 服务将在 http://localhost:8000 启动
-echo API文档: http://localhost:8000/docs
+echo ========================================
+echo 服务启动中...
+echo ========================================
+echo.
+echo 后端服务: http://localhost:8000
+echo API文档:  http://localhost:8000/docs
+echo 健康检查: http://localhost:8000/health
 echo.
 echo 按 Ctrl+C 停止服务
+echo ========================================
 echo.
 
 python run.py

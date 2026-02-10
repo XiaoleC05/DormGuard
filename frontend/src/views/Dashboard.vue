@@ -91,7 +91,13 @@ const loadLatestRecord = async () => {
     const data = await getLatestRecord(dormNumber)
     latestRecord.value = data
   } catch (error) {
-    ElMessage.error('获取数据失败：' + error.message)
+    // 如果是404错误（没有数据），不显示错误提示，只清空数据
+    if (error.response?.status === 404) {
+      latestRecord.value = null
+      console.log('暂无电费记录数据')
+    } else {
+      ElMessage.error('获取数据失败：' + (error.response?.data?.detail || error.message))
+    }
   } finally {
     loading.value = false
   }
@@ -106,9 +112,14 @@ const loadChartData = async () => {
     await nextTick()
     if (chartContainer.value && records.length > 0) {
       initChart(records)
+    } else if (records.length === 0) {
+      console.log('暂无图表数据')
     }
   } catch (error) {
-    ElMessage.error('加载图表数据失败：' + error.message)
+    // 如果是404或其他错误，不显示错误提示
+    if (error.response?.status !== 404) {
+      ElMessage.error('加载图表数据失败：' + (error.response?.data?.detail || error.message))
+    }
   } finally {
     chartLoading.value = false
   }
