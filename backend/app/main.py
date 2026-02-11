@@ -5,13 +5,16 @@
 管理员QQ：714085964
 """
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from app.api import router
 from app.scheduler import init_scheduler, shutdown_scheduler
 from app.database import SessionLocal
 from app.services import CrawlerService
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +64,33 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(router, prefix="/api")
+
+
+# 全局异常处理器
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全局异常处理器，捕获所有未处理的异常"""
+    logger.error(f"未处理的异常: {exc}", exc_info=True)
+    logger.error(f"请求路径: {request.url.path}")
+    logger.error(f"请求方法: {request.method}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": str(exc),
+            "type": type(exc).__name__,
+            "path": request.url.path
+        }
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """请求验证异常处理器"""
+    logger.error(f"请求验证失败: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": exc.errors(), "body": exc.body}
+    )
 
 
 @app.get("/")

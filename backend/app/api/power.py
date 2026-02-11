@@ -21,10 +21,18 @@ async def create_record(record: PowerRecordCreate, db: Session = Depends(get_db)
 @router.get("/records/{dorm_number}/latest", response_model=PowerRecordResponse, summary="获取最新记录")
 async def get_latest_record(dorm_number: str, db: Session = Depends(get_db)):
     """获取指定宿舍的最新电费记录"""
-    record = PowerRecordService.get_latest_record(db, dorm_number)
-    if not record:
-        raise HTTPException(status_code=404, detail="未找到记录")
-    return record
+    try:
+        record = PowerRecordService.get_latest_record(db, dorm_number)
+        if not record:
+            raise HTTPException(status_code=404, detail="未找到记录")
+        return record
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"获取最新记录失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"服务器内部错误: {str(e)}")
 
 
 @router.get("/records/{dorm_number}", response_model=List[PowerRecordResponse], summary="获取记录列表")
@@ -34,7 +42,13 @@ async def get_records(
     db: Session = Depends(get_db)
 ):
     """获取指定宿舍的电费记录列表"""
-    return PowerRecordService.get_records(db, dorm_number, limit)
+    try:
+        return PowerRecordService.get_records(db, dorm_number, limit)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"获取记录列表失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"服务器内部错误: {str(e)}")
 
 
 @router.get("/records/{dorm_number}/range", response_model=List[PowerRecordResponse], summary="按日期范围获取记录")
