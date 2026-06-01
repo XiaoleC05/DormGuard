@@ -5,7 +5,6 @@ on:
     # 每天北京时间 08:00 运行（UTC 00:00）
     - cron: '0 0 * * *'
   workflow_dispatch:
-    # 支持手动触发，方便调试
 
 jobs:
   check-power:
@@ -34,8 +33,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: backend/requirements.txt
 
       - name: 安装系统依赖
         run: |
@@ -46,7 +43,7 @@ jobs:
         run: |
           cd backend
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --no-cache-dir -r requirements.txt
 
       - name: 通过 Python 创建 .env 配置文件
         run: |
@@ -54,40 +51,39 @@ jobs:
           python -c "
           import os
           env_content = '''# ===== 数据库配置 =====
-          DB_HOST=127.0.0.1
-          DB_PORT=3306
-          DB_USER=root
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          DB_NAME=dorm_power_guard
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+DB_NAME=dorm_power_guard
 
-          # ===== 爬虫认证信息 =====
-          CRAWLER_BASE_URL=${{ secrets.CRAWLER_BASE_URL }}
-          CRAWLER_API_BASE_URL=${{ secrets.CRAWLER_API_BASE_URL }}
-          CRAWLER_OPENID=${{ secrets.CRAWLER_OPENID }}
-          CRAWLER_JSESSIONID=${{ secrets.CRAWLER_JSESSIONID }}
-          CRAWLER_DORM_NUMBER=${{ secrets.CRAWLER_DORM_NUMBER }}
-          CRAWLER_ROOM_ID=${{ secrets.CRAWLER_ROOM_ID }}
-          CRAWLER_AREA_ID=${{ secrets.CRAWLER_AREA_ID }}
-          CRAWLER_YQ_ID=${{ secrets.CRAWLER_YQ_ID }}
-          CRAWLER_BUILDING_ID=${{ secrets.CRAWLER_BUILDING_ID }}
-          CRAWLER_FLOOR_ID=${{ secrets.CRAWLER_FLOOR_ID }}
-          CRAWLER_FACTORY_CODE=${{ secrets.CRAWLER_FACTORY_CODE }}
-          CRAWLER_SIGN=${{ secrets.CRAWLER_SIGN }}
-          CRAWLER_ORG_ID=${{ secrets.CRAWLER_ORG_ID }}
+# ===== 爬虫认证信息 =====
+CRAWLER_BASE_URL=${{ secrets.CRAWLER_BASE_URL }}
+CRAWLER_API_BASE_URL=${{ secrets.CRAWLER_API_BASE_URL }}
+CRAWLER_OPENID=${{ secrets.CRAWLER_OPENID }}
+CRAWLER_DORM_NUMBER=${{ secrets.CRAWLER_DORM_NUMBER }}
+CRAWLER_ROOM_ID=${{ secrets.CRAWLER_ROOM_ID }}
+CRAWLER_AREA_ID=${{ secrets.CRAWLER_AREA_ID }}
+CRAWLER_YQ_ID=${{ secrets.CRAWLER_YQ_ID }}
+CRAWLER_BUILDING_ID=${{ secrets.CRAWLER_BUILDING_ID }}
+CRAWLER_FLOOR_ID=${{ secrets.CRAWLER_FLOOR_ID }}
+CRAWLER_FACTORY_CODE=${{ secrets.CRAWLER_FACTORY_CODE }}
+CRAWLER_SIGN=${{ secrets.CRAWLER_SIGN }}
+CRAWLER_ORG_ID=${{ secrets.CRAWLER_ORG_ID }}
 
-          # ===== 邮件告警配置 =====
-          EMAIL_ENABLED=${{ secrets.EMAIL_ENABLED }}
-          EMAIL_SMTP_HOST=${{ secrets.EMAIL_SMTP_HOST }}
-          EMAIL_SMTP_PORT=${{ secrets.EMAIL_SMTP_PORT }}
-          EMAIL_SMTP_USER=${{ secrets.EMAIL_SMTP_USER }}
-          EMAIL_SMTP_PASSWORD=${{ secrets.EMAIL_SMTP_PASSWORD }}
-          EMAIL_FROM=${{ secrets.EMAIL_FROM }}
-          EMAIL_TO=${{ secrets.EMAIL_TO }}
-          QQ_NOTIFY_API_KEY=${{ secrets.QQ_NOTIFY_API_KEY }}
+# ===== 邮件告警配置 =====
+EMAIL_ENABLED=${{ secrets.EMAIL_ENABLED }}
+EMAIL_SMTP_HOST=${{ secrets.EMAIL_SMTP_HOST }}
+EMAIL_SMTP_PORT=${{ secrets.EMAIL_SMTP_PORT }}
+EMAIL_SMTP_USER=${{ secrets.EMAIL_SMTP_USER }}
+EMAIL_SMTP_PASSWORD=${{ secrets.EMAIL_SMTP_PASSWORD }}
+EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+EMAIL_TO=${{ secrets.EMAIL_TO }}
+QQ_NOTIFY_API_KEY=${{ secrets.QQ_NOTIFY_API_KEY }}
 
-          # ===== 默认告警阈值 =====
-          DEFAULT_ALERT_THRESHOLD=${{ secrets.DEFAULT_ALERT_THRESHOLD }}
-          '''
+# ===== 默认告警阈值 =====
+DEFAULT_ALERT_THRESHOLD=${{ secrets.DEFAULT_ALERT_THRESHOLD }}
+'''
           with open('.env', 'w', encoding='utf-8') as f:
               f.write(env_content.strip())
           print('.env 文件已创建')
