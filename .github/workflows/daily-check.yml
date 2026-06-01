@@ -55,6 +55,7 @@ jobs:
           CRAWLER_SIGN=${{ vars.CRAWLER_SIGN }}
           CRAWLER_ORG_ID=${{ vars.CRAWLER_ORG_ID }}
           QQ_NOTIFY_API_KEY=${{ secrets.QQ_NOTIFY_API_KEY }}
+          QQ_GROUP_ID=${{ vars.QQ_GROUP_ID }}
           DEFAULT_ALERT_THRESHOLD=10
           ENVEOF
       - name: 等待 MySQL 就绪
