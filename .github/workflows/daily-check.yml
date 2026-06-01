@@ -83,6 +83,7 @@ jobs:
           EMAIL_SMTP_PASSWORD=${{ secrets.EMAIL_SMTP_PASSWORD }}
           EMAIL_FROM=${{ secrets.EMAIL_FROM }}
           EMAIL_TO=${{ secrets.EMAIL_TO }}
+          QQ_NOTIFY_API_KEY=${{ secrets.QQ_NOTIFY_API_KEY }}
 
           # ===== 默认告警阈值 =====
           DEFAULT_ALERT_THRESHOLD=${{ secrets.DEFAULT_ALERT_THRESHOLD }}
