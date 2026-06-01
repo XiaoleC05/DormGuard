@@ -27,7 +27,7 @@ class QQDirectNotifier:
         self.token = os.getenv("QQ_NOTIFY_API_KEY", "")
         self.enabled = bool(self.token)
 
-    def send(self, title: str, content: str, msg_type: str = "text") -> bool:
+    def send(self, title: str, content: str) -> bool:
         if not self.enabled:
             logger.info("消息推送未启用（未配置 QQ_NOTIFY_API_KEY）")
             return False
@@ -42,7 +42,6 @@ class QQDirectNotifier:
                     "token": self.token,
                     "title": title,
                     "content": content,
-                    "template": msg_type,
                 },
                 timeout=15,
             )
