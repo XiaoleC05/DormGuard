@@ -171,27 +171,24 @@ class QQBotAlert:
             # 构建告警消息
             message = self._build_message(dorm_number, category_name, balance, threshold, kbalance, zbalance)
             
-            # 判断是群号还是用户QQ号（群号通常较大，用户QQ号通常较小）
-            # 如果qq_receiver_id是数字且大于1000000000，认为是群号；否则认为是用户QQ号
+            # 判断是群号还是用户QQ号
             try:
-                receiver_num = int(receiver_id)
-                # 使用规则中配置的qq_receiver_id
-                if receiver_num >= 1000000000:
-                    # 群号（大于1000000000），发送群消息
+                if receiver_id.startswith("group:") or receiver_id.startswith("g:"):
+                    _, actual_id = receiver_id.split(":", 1)
+                    group_id = int(actual_id.strip())
                     url = f"{self.api_url}/api/send_group_msg"
-                    data = {
-                        "group_id": receiver_num,
-                        "message": message
-                    }
-                    target_info = f"群 {receiver_id}"
+                    data = {"group_id": group_id, "message": message}
+                    target_info = f"群 {group_id}"
                 else:
-                    # 用户QQ号，发送私聊
-                    url = f"{self.api_url}/api/send_private_msg"
-                    data = {
-                        "user_id": receiver_num,
-                        "message": message
-                    }
-                    target_info = f"用户 {receiver_id}"
+                    receiver_num = int(receiver_id)
+                    if receiver_num >= 1000000000:
+                        url = f"{self.api_url}/api/send_group_msg"
+                        data = {"group_id": receiver_num, "message": message}
+                        target_info = f"群 {receiver_id}"
+                    else:
+                        url = f"{self.api_url}/api/send_private_msg"
+                        data = {"user_id": receiver_num, "message": message}
+                        target_info = f"用户 {receiver_id}"
             except ValueError:
                 logger.error(f"QQ接收者ID格式错误：{receiver_id}")
                 return False

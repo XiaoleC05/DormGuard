@@ -4,9 +4,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.services import CrawlerService
+from app.services import CrawlerService, PowerRecordService, AlertRuleService
 from app.config import settings
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,61 @@ async def manual_crawl(db: Session = Depends(get_db)):
             "message": f"数据获取异常：{error_msg}"
         }
 
+
+
+
+@router.post("/report", summary="发送电费实时报告到QQ群")
+async def send_power_report(db: Session = Depends(get_db)):
+    """按真实流程发送电费报告：使用最新采集记录，只发送空调/照明余额"""
+    try:
+        dorm_number = str(settings.CRAWLER_DORM_NUMBER)
+        latest = PowerRecordService.get_latest_record(db, dorm_number)
+        if not latest:
+            return {"success": False, "message": "暂无电费记录，请先执行一次爬虫采集"}
+
+        if not settings.QQ_BOT_ENABLED or not settings.QQ_BOT_API_URL:
+            return {"success": False, "message": "QQ机器人未启用或API地址未配置"}
+
+        rule = AlertRuleService.get_rule(db, dorm_number)
+        receiver = getattr(rule, "qq_receiver_id", None) if rule else None
+        if not receiver:
+            return {"success": False, "message": "未找到QQ接收配置（请在告警规则中填写群号）"}
+
+        receiver = receiver.strip()
+        if receiver.startswith("group:") or receiver.startswith("g:"):
+            receiver = receiver.split(":", 1)[1].strip()
+
+        try:
+            group_id = int(receiver)
+        except ValueError:
+            return {"success": False, "message": f"QQ群号配置无效：{receiver}"}
+
+        msg = (
+            "【电费实时报告】\n"
+            f"宿舍: {latest.dorm_number}\n"
+            f"空调余额: {latest.kbalance if latest.kbalance is not None else 'N/A'} 度\n"
+            f"照明余额: {latest.zbalance if latest.zbalance is not None else 'N/A'} 度\n"
+            f"记录时间: {latest.record_time}\n"
+            "来源: 后端实时记录"
+        )
+
+        resp = requests.post(
+            f"{settings.QQ_BOT_API_URL}/api/send_group_msg",
+            json={"group_id": group_id, "message": msg},
+            timeout=10,
+        )
+
+        if resp.status_code != 200:
+            return {"success": False, "message": f"发送失败，HTTP {resp.status_code}", "detail": resp.text[:200]}
+
+        data = resp.json()
+        if data.get("status") == "ok" or data.get("retcode") == 0:
+            return {"success": True, "message": "电费实时报告发送成功", "report": msg}
+
+        return {"success": False, "message": "发送失败", "detail": data}
+    except Exception as e:
+        logger.error(f"发送电费实时报告异常：{e}", exc_info=True)
+        return {"success": False, "message": f"发送异常：{str(e)}"}
 
 @router.get("/qq-config", summary="获取QQ机器人全局配置")
 async def get_qq_config():

@@ -13,6 +13,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+LOW_BALANCE_ALERT_THRESHOLD = 10.0
+
 
 class PowerRecordService:
     """电费记录服务"""
@@ -306,64 +308,48 @@ class CrawlerService:
     @staticmethod
     def check_and_alert(db: Session, dorm_number: str, kbalance: Optional[float] = None, zbalance: Optional[float] = None, force_alert: bool = False):
         """
-        检查余量并触发告警（分别检查空调和照明）
-        
-        Args:
-            db: 数据库会话
-            dorm_number: 宿舍号
-            kbalance: 空调余量
-            zbalance: 照明余量
-            force_alert: 是否强制发送告警（忽略防频繁告警限制）
+        Trigger alerts when AC or lighting balance drops below 10.
         """
         rule = AlertRuleService.get_rule(db, dorm_number)
-        
+
         if not rule:
-            logger.warning(f"未找到告警规则：{dorm_number}")
+            logger.warning(f"Alert rule not found: {dorm_number}")
             return
-        
+
         if not rule.enabled:
-            logger.info(f"告警规则未启用：{dorm_number}")
+            logger.info(f"Alert rule disabled: {dorm_number}")
             return
-        
-        logger.info(f"开始检查告警：{dorm_number}, 空调余量={kbalance}, 照明余量={zbalance}, 空调阈值={rule.kthreshold}, 照明阈值={rule.zthreshold}, 强制告警={force_alert}")
-        
-        # 检查空调告警
-        if kbalance is not None and rule.kthreshold is not None:
-            if kbalance < rule.kthreshold:
-                logger.info(f"触发空调告警：{dorm_number}, 余额 {kbalance:.2f} 度 < 阈值 {rule.kthreshold:.2f} 度")
+
+        threshold = LOW_BALANCE_ALERT_THRESHOLD
+        logger.info(
+            f"Checking alerts: dorm={dorm_number}, kbalance={kbalance}, zbalance={zbalance}, threshold={threshold}, force={force_alert}"
+        )
+
+        triggered = False
+
+        if kbalance is not None:
+            if kbalance < threshold:
+                triggered = True
+                logger.info(f"AC alert triggered: {dorm_number}, balance {kbalance:.2f} < {threshold:.2f}")
                 CrawlerService._send_alert(
-                    db, rule, dorm_number, kbalance, rule.kthreshold, 'ac', '空调', force_alert=force_alert
+                    db, rule, dorm_number, kbalance, threshold, 'ac', '空调', force_alert=force_alert
                 )
             else:
-                logger.info(f"空调余额正常：{dorm_number}, 余额 {kbalance:.2f} 度 >= 阈值 {rule.kthreshold:.2f} 度")
-        
-        # 检查照明告警
-        if zbalance is not None and rule.zthreshold is not None:
-            if zbalance < rule.zthreshold:
-                logger.info(f"触发照明告警：{dorm_number}, 余额 {zbalance:.2f} 度 < 阈值 {rule.zthreshold:.2f} 度")
+                logger.info(f"AC balance normal: {dorm_number}, balance {kbalance:.2f} >= {threshold:.2f}")
+
+        if zbalance is not None:
+            if zbalance < threshold:
+                triggered = True
+                logger.info(f"Lighting alert triggered: {dorm_number}, balance {zbalance:.2f} < {threshold:.2f}")
                 CrawlerService._send_alert(
-                    db, rule, dorm_number, zbalance, rule.zthreshold, 'light', '照明', force_alert=force_alert
+                    db, rule, dorm_number, zbalance, threshold, 'light', '照明', force_alert=force_alert
                 )
             else:
-                logger.info(f"照明余额正常：{dorm_number}, 余额 {zbalance:.2f} 度 >= 阈值 {rule.zthreshold:.2f} 度")
-        
-        # 如果照明余量不为None但阈值为None，记录警告
-        if zbalance is not None and rule.zthreshold is None:
-            logger.warning(f"照明余量有值（{zbalance:.2f}度）但未设置照明阈值，无法触发照明告警")
-        
-        # 如果空调余量不为None但阈值为None，记录警告
-        if kbalance is not None and rule.kthreshold is None:
-            logger.warning(f"空调余量有值（{kbalance:.2f}度）但未设置空调阈值，无法触发空调告警")
-        
-        # 兼容旧版本：如果设置了threshold但没有设置kthreshold和zthreshold
-        if rule.threshold is not None and rule.kthreshold is None and rule.zthreshold is None:
-            balance = kbalance if kbalance is not None else zbalance
-            if balance is not None and balance < rule.threshold:
-                logger.info(f"触发告警（兼容模式）：{dorm_number}, 余额 {balance:.2f} 度 < 阈值 {rule.threshold:.2f} 度")
-                CrawlerService._send_alert(
-                    db, rule, dorm_number, balance, rule.threshold, 'ac', '空调', force_alert=force_alert
-                )
-    
+                logger.info(f"Lighting balance normal: {dorm_number}, balance {zbalance:.2f} >= {threshold:.2f}")
+
+        if not triggered:
+            logger.info(f"No alert triggered for dorm {dorm_number}; both balances are >= 10")
+
     @staticmethod
     def _should_send_alert(db: Session, dorm_number: str, category: str, category_name: str, 
                           alert_type: str, force_alert: bool = False) -> tuple[bool, Optional[str]]:
