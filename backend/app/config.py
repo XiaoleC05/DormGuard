@@ -1,6 +1,7 @@
 """
 奥泽莉亚工具箱 - 配置文件
-"""from pydantic_settings import BaseSettings, SettingsConfigDict
+"""
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 from pydantic import field_validator
 
