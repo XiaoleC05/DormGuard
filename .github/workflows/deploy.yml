@@ -43,5 +43,5 @@ jobs:
           rm -rf /tmp/dorm-release
           mkdir -p /tmp/dorm-release
           tar xzf /tmp/dorm-release.tar.gz -C /tmp/dorm-release
-          bash /tmp/dorm-release/deploy/apply-release.sh /tmp/dorm-release
+          sudo bash /tmp/dorm-release/deploy/apply-release.sh /tmp/dorm-release
           rm -rf /tmp/dorm-release /tmp/dorm-release.tar.gz
