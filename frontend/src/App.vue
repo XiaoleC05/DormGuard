@@ -1,8 +1,9 @@
 <template>
-  <el-container class="app-container">
+  <router-view v-if="isLoginPage" />
+  <el-container v-else class="app-container">
     <el-header class="app-header">
       <div class="header-content">
-        <h1>西华大学宿舍电费监控系统</h1>
+        <h1>宿舍电费监控</h1>
         <el-menu
           mode="horizontal"
           :default-active="activeMenu"
@@ -21,7 +22,12 @@
             <el-icon><Bell /></el-icon>
             <span>告警日志</span>
           </el-menu-item>
+          <el-menu-item index="/settings">
+            <el-icon><Setting /></el-icon>
+            <span>系统配置</span>
+          </el-menu-item>
         </el-menu>
+        <el-button link class="logout-btn" @click="handleLogout">退出</el-button>
       </div>
     </el-header>
     <el-main class="app-main">
@@ -32,11 +38,19 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { Monitor, Document, Bell } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Monitor, Document, Bell, Setting } from '@element-plus/icons-vue'
+import { clearAuth } from './api/auth'
 
 const route = useRoute()
+const router = useRouter()
 const activeMenu = computed(() => route.path)
+const isLoginPage = computed(() => route.path === '/login')
+
+const handleLogout = () => {
+  clearAuth()
+  router.replace('/login')
+}
 </script>
 
 <style>
@@ -67,17 +81,20 @@ body {
   justify-content: space-between;
   padding: 0 20px;
   height: 100%;
+  gap: 12px;
 }
 
 .header-content h1 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   margin: 0;
+  white-space: nowrap;
 }
 
 .header-menu {
   background: transparent;
   border: none;
+  flex: 1;
 }
 
 .header-menu .el-menu-item {
@@ -92,9 +109,13 @@ body {
   border-bottom-color: white;
 }
 
+.logout-btn {
+  color: white !important;
+}
+
 .app-main {
   padding: 24px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  background: #f5f7fa;
   min-height: calc(100vh - 60px);
 }
 </style>

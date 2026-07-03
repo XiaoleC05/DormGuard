@@ -3,17 +3,33 @@
 """
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Optional, Tuple, List
 from app.models import PowerRecord, AlertRule, AlertLog
 from app.schemas import PowerRecordCreate, AlertRuleCreate, AlertRuleUpdate
 from app.crawler import get_crawler
 from app.alert import get_alert_manager
+from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 LOW_BALANCE_ALERT_THRESHOLD = 10.0
+
+
+def is_qq_alert_paused() -> tuple[bool, Optional[str]]:
+    """检查 QQ 告警是否处于暂停期（QQ_ALERT_PAUSE_UNTIL 之前不发自动告警）"""
+    pause_until = settings.QQ_ALERT_PAUSE_UNTIL
+    if not pause_until or not str(pause_until).strip():
+        return False, None
+    try:
+        resume_date = datetime.strptime(str(pause_until).strip(), "%Y-%m-%d").date()
+    except ValueError:
+        logger.warning(f"QQ_ALERT_PAUSE_UNTIL 格式无效：{pause_until}，忽略暂停配置")
+        return False, None
+    if date.today() < resume_date:
+        return True, f"QQ告警已暂停，将于 {resume_date} 恢复"
+    return False, None
 
 
 class PowerRecordService:
@@ -371,6 +387,13 @@ class CrawlerService:
         """
         if force_alert:
             return True, None
+
+        if alert_type == 'qq':
+            paused, pause_reason = is_qq_alert_paused()
+            if paused:
+                return False, pause_reason
+        
+        cooldown_hours = settings.ALERT_COOLDOWN_HOURS
         
         # 查找该类别和类型的最近一次成功告警
         last_success_log = db.query(AlertLog).filter(
@@ -382,8 +405,8 @@ class CrawlerService:
         
         if last_success_log:
             time_diff = datetime.now() - last_success_log.created_at
-            if time_diff < timedelta(hours=1):
-                return False, f"距离上次{alert_type}告警成功不足1小时（{int(time_diff.total_seconds() / 60)}分钟前）"
+            if time_diff < timedelta(hours=cooldown_hours):
+                return False, f"距离上次{alert_type}告警成功不足{cooldown_hours}小时（{int(time_diff.total_seconds() / 60)}分钟前）"
         
         # 如果上次告警失败，允许立即重试
         last_failed_log = db.query(AlertLog).filter(

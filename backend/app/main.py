@@ -56,7 +56,12 @@ app = FastAPI(
 # 配置CORS，允许前端访问
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应设置为具体的前端地址
+    allow_origins=[
+        "https://masterc.cn",
+        "https://www.masterc.cn",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

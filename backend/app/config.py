@@ -46,8 +46,11 @@ class Settings(BaseSettings):
     CRAWLER_SIGN: Optional[str] = "qt"
     CRAWLER_ORG_ID: Optional[str] = "2"
     
-    # 定时任务配置（已废弃）
-    SCHEDULER_HOURS: str = "8,12,18,22"
+    # 定时任务配置
+    SCHEDULER_INTERVAL_HOURS: int = 2  # 爬虫与告警检测间隔（小时）
+    ALERT_COOLDOWN_HOURS: int = 2  # 同类告警最短间隔（小时），建议与检测间隔一致
+    QQ_ALERT_PAUSE_UNTIL: Optional[str] = None  # QQ告警暂停至该日期（不含），格式 YYYY-MM-DD，到达当日恢复
+    SCHEDULER_HOURS: str = "8,12,18,22"  # 已废弃
     
     # 邮件配置
     EMAIL_ENABLED: bool = False
@@ -71,6 +74,12 @@ class Settings(BaseSettings):
 
     # 默认告警阈值
     DEFAULT_ALERT_THRESHOLD: float = 20.0
+
+    # 管理登录（唯一用户，无注册/改密）
+    ADMIN_USERNAME: str = "root"
+    ADMIN_PASSWORD: str = "783688"
+    ADMIN_JWT_SECRET: str = "dorm-power-guard-masterc-secret"
+    ADMIN_TOKEN_EXPIRE_HOURS: int = 168
 
     @field_validator("DEFAULT_ALERT_THRESHOLD", mode="before")
     @classmethod

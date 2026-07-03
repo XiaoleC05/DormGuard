@@ -1,0 +1,17 @@
+[Unit]
+Description=Dorm Power Guard Backend API
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/dorm-power-guard-lite/backend
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/dorm-power-guard-lite/backend/venv/bin/python run.py
+Restart=always
+RestartSec=5
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

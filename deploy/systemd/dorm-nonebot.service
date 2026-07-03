@@ -1,0 +1,16 @@
+[Unit]
+Description=Dorm Power Guard NoneBot QQ Bot
+After=network.target dorm-backend.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/dorm-power-guard-lite/backend/nonebot_bot
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/dorm-power-guard-lite/backend/venv/bin/python bot.py
+Restart=always
+RestartSec=5
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

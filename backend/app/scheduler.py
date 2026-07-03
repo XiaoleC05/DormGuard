@@ -31,15 +31,15 @@ def init_scheduler():
     if scheduler.running:
         return
     
-    # 每小时执行一次
+    interval_hours = settings.SCHEDULER_INTERVAL_HOURS
     scheduler.add_job(
         scheduled_crawl,
-        trigger=IntervalTrigger(hours=1),  # 每小时执行一次
-        id='crawl_job_hourly',
-        name='电费爬虫任务-每小时',
+        trigger=IntervalTrigger(hours=interval_hours),
+        id='crawl_job_interval',
+        name=f'电费爬虫任务-每{interval_hours}小时',
         replace_existing=True
     )
-    logger.info("已添加定时任务：每小时执行一次爬虫")
+    logger.info(f"已添加定时任务：每 {interval_hours} 小时执行一次爬虫")
     
     scheduler.start()
     logger.info("定时任务调度器已启动")
