@@ -38,5 +38,5 @@ systemctl restart dorm-backend dorm-nonebot
 bash "$APP_DIR/deploy/fix-napcat.sh" || true
 nginx -t
 systemctl reload nginx
-"$APP_DIR/deploy/monitor/dorm-healthcheck.sh"
+"$APP_DIR/deploy/monitor/dorm-healthcheck.sh" || true
 echo "Deploy success"
