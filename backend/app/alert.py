@@ -9,6 +9,23 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _format_qq_error(raw: str) -> str:
+    """从 NoneBot/NapCat 返回中提取可读错误信息。"""
+    if not raw:
+        return "QQ消息发送失败"
+    if "你已被移出该群" in raw or "重新加群" in raw:
+        return "机器人已被移出告警群，请用其他号邀请 1270667498 重新入群，或在设置中修改告警群号"
+    if "no bots" in raw.lower() or "no bot" in raw.lower():
+        return "NoneBot未连接NapCatQQ，请检查 NapCat 是否已登录并连接"
+    import re
+    match = re.search(r'"errMsg":\s*"([^"]+)"', raw)
+    if match:
+        return match.group(1)
+    if len(raw) > 200:
+        return raw[:200] + "..."
+    return raw
+
+
 def _parse_group_id(raw: Optional[str]) -> Optional[int]:
     """解析告警群号，仅支持群号（纯数字）。"""
     if not raw or not str(raw).strip():
@@ -39,19 +56,19 @@ class QQBotAlert:
         threshold: float,
         kbalance: Optional[float] = None,
         zbalance: Optional[float] = None,
-    ) -> bool:
+    ) -> tuple[bool, Optional[str]]:
         if not self.enabled:
             logger.debug("QQ告警未启用（全局配置）")
-            return False
+            return False, "QQ告警未启用"
 
         if not self.api_url:
             logger.error("QQ机器人API地址未配置")
-            return False
+            return False, "QQ机器人API地址未配置"
 
         group_num = _parse_group_id(self.group_id)
         if group_num is None:
             logger.error("未配置告警群号（请在系统配置中填写 QQ_BOT_GROUP_ID）")
-            return False
+            return False, "未配置告警群号"
 
         try:
             message = self._build_message(
@@ -65,33 +82,31 @@ class QQBotAlert:
                 f"正在发送QQ群告警到群 {group_num}：{dorm_number}, {category_name}余量 {balance:.2f} 度"
             )
             response = requests.post(url, json=data, headers=headers, timeout=10)
-
-            if response.status_code == 200:
+            try:
                 result = response.json()
-                if result.get("status") == "ok" or result.get("retcode") == 0:
-                    logger.info(
-                        f"QQ群告警发送成功：{dorm_number}, {category_name}余量 {balance:.2f} 度 -> 群 {group_num}"
-                    )
-                    return True
-                error_msg = result.get("msg", str(result))
-                if "no bots" in error_msg.lower() or "no bot" in error_msg.lower():
-                    error_msg = "NoneBot未连接NapCatQQ，请检查 NapCat 是否已登录并连接"
-                logger.error(f"QQ告警发送失败（API返回错误）：{error_msg}")
-                return False
+            except ValueError:
+                result = {}
 
-            logger.error(
-                f"QQ告警API请求失败：HTTP {response.status_code}, 响应：{response.text[:200]}"
-            )
-            return False
+            if response.status_code == 200 and (
+                result.get("status") == "ok" or result.get("retcode") == 0
+            ):
+                logger.info(
+                    f"QQ群告警发送成功：{dorm_number}, {category_name}余量 {balance:.2f} 度 -> 群 {group_num}"
+                )
+                return True, None
+
+            error_msg = _format_qq_error(result.get("msg", response.text))
+            logger.error(f"QQ告警发送失败：{error_msg}")
+            return False, error_msg
         except requests.exceptions.Timeout:
             logger.error("QQ告警发送超时：NoneBot可能响应缓慢或NapCat未连接")
-            return False
+            return False, "QQ告警发送超时"
         except requests.exceptions.ConnectionError as e:
             logger.error(f"QQ告警连接失败：无法连接到NoneBot（{self.api_url}）：{e}")
-            return False
+            return False, "无法连接到NoneBot，请检查服务是否运行"
         except Exception as e:
             logger.error(f"QQ告警发送失败：{dorm_number}, {category_name}, 错误：{e}", exc_info=True)
-            return False
+            return False, str(e)
 
     def _build_message(
         self,
@@ -149,7 +164,7 @@ class AlertManager:
         if not qq_enabled:
             return results
         try:
-            results["qq"] = self.qq_alert.send(
+            ok, _ = self.qq_alert.send(
                 dorm_number=dorm_number,
                 category_name=category_name,
                 balance=balance,
@@ -157,9 +172,12 @@ class AlertManager:
                 kbalance=kbalance,
                 zbalance=zbalance,
             )
+            results["qq"] = ok
+            results["qq_error"] = None if ok else _
         except Exception as e:
             logger.error(f"QQ告警发送异常：{e}", exc_info=True)
             results["qq"] = False
+            results["qq_error"] = str(e)
         return results
 
 

@@ -443,7 +443,9 @@ class CrawlerService:
             zbalance=zbalance,
         )
         qq_success = results.get('qq', False)
-        error_msg = None if qq_success else qq_reason or "QQ消息发送失败，请检查NoneBot和NapCatQQ连接状态"
+        error_msg = results.get('qq_error') if not qq_success else None
+        if not qq_success and not error_msg:
+            error_msg = qq_reason or "QQ消息发送失败"
 
         AlertLogService.create_log(
             db, dorm_number, balance, threshold, category,
