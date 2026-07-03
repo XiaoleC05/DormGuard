@@ -10,14 +10,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    runs-on: self-hosted
+  build:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Build frontend
         run: |
@@ -35,13 +37,29 @@ jobs:
             backend/ release/backend/
           rsync -a --delete frontend/dist/ release/frontend-dist/
           rsync -a deploy/ release/deploy/
-          tar czf /tmp/dorm-release.tar.gz -C release .
+          tar czf dorm-release.tar.gz -C release .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dorm-release
+          path: dorm-release.tar.gz
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dorm-release
 
       - name: Apply release on server
         run: |
           set -euo pipefail
           rm -rf /tmp/dorm-release
           mkdir -p /tmp/dorm-release
-          tar xzf /tmp/dorm-release.tar.gz -C /tmp/dorm-release
+          tar xzf dorm-release.tar.gz -C /tmp/dorm-release
           sudo bash /tmp/dorm-release/deploy/apply-release.sh /tmp/dorm-release
-          rm -rf /tmp/dorm-release /tmp/dorm-release.tar.gz
+          rm -rf /tmp/dorm-release dorm-release.tar.gz
