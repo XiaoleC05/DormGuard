@@ -25,23 +25,17 @@ CREATE TABLE IF NOT EXISTS power_records (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='电费记录表';
 
 -- 告警规则表
--- 存储每个宿舍的告警配置，包括阈值设置和告警方式（邮件/QQ）。
--- 每个宿舍对应一条规则，通过dorm_number唯一标识。
 CREATE TABLE IF NOT EXISTS alert_rules (
     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID，自增',
     dorm_number VARCHAR(50) NOT NULL COMMENT '宿舍号（如：320、324），唯一标识一个宿舍的告警规则',
-    room_id VARCHAR(50) NULL COMMENT '房间ID（roomid），从西华大学电费系统API获取，用于查询该宿舍的电费数据，多宿舍监控必需',
+    room_id VARCHAR(50) NULL COMMENT '房间ID（roomid），从西华大学电费系统API获取，用于查询该宿舍的电费数据',
     kthreshold FLOAT NULL COMMENT '空调告警阈值（度），当空调余量低于此值时触发告警',
     zthreshold FLOAT NULL COMMENT '照明告警阈值（度），当照明余量低于此值时触发告警',
-    threshold FLOAT NULL COMMENT '告警阈值（度），已废弃，保留用于兼容性，请使用kthreshold和zthreshold',
     enabled BOOLEAN NOT NULL DEFAULT TRUE COMMENT '是否启用告警规则，False时不会触发任何告警',
-    email_enabled BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否启用邮件告警，True时当余量低于阈值会发送邮件',
-    email_address VARCHAR(255) NULL COMMENT '邮件告警接收邮箱地址，启用邮件告警时必须填写',
-    qq_enabled BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否启用QQ告警，True时当余量低于阈值会发送QQ消息',
-    qq_receiver_id VARCHAR(50) NULL COMMENT '已废弃，告警群号改由 QQ_BOT_GROUP_ID 配置',
-    last_alert_time DATETIME NULL COMMENT '最后告警时间，用于防止频繁告警，记录最近一次成功发送告警的时间',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间，规则创建的时间',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间，规则最后修改的时间',
+    qq_enabled BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否启用QQ告警',
+    last_alert_time DATETIME NULL COMMENT '最后告警时间',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_dorm_number (dorm_number),
     INDEX idx_enabled (enabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警规则表';
@@ -54,7 +48,7 @@ CREATE TABLE IF NOT EXISTS alert_logs (
     alert_category VARCHAR(20) NULL COMMENT '告警类别：ac（空调）/light（照明），标识是哪个类型的电费余量触发了告警',
     balance FLOAT NOT NULL COMMENT '触发告警时的余量（度），记录告警触发时的实际电费余量',
     threshold FLOAT NOT NULL COMMENT '告警阈值（度），记录触发告警时使用的阈值',
-    alert_type VARCHAR(20) NOT NULL COMMENT '告警类型：email（邮件告警）/qq（QQ告警），标识使用的告警方式',
+    alert_type VARCHAR(20) NOT NULL COMMENT '告警类型：qq（QQ告警）',
     alert_status VARCHAR(20) NOT NULL COMMENT '告警状态：success（发送成功）/failed（发送失败），标识告警是否成功发送',
     alert_message TEXT NULL COMMENT '告警消息内容，记录实际发送的告警消息文本',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间，告警发送的时间',

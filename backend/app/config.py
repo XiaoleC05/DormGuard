@@ -25,11 +25,7 @@ class Settings(BaseSettings):
     # 爬虫配置
     CRAWLER_BASE_URL: Optional[str] = None
     CRAWLER_API_BASE_URL: Optional[str] = None
-    CRAWLER_TOKEN: Optional[str] = None
-    CRAWLER_USERNAME: Optional[str] = None
-    CRAWLER_PASSWORD: Optional[str] = None
     CRAWLER_DORM_NUMBER: Optional[str] = None
-    CRAWLER_TOKEN_REFRESH_URL: Optional[str] = None
     
     # 西华大学电费系统特定配置
     CRAWLER_OPENID: Optional[str] = None
@@ -47,25 +43,12 @@ class Settings(BaseSettings):
     SCHEDULER_INTERVAL_HOURS: int = 2  # 爬虫与告警检测间隔（小时）
     ALERT_COOLDOWN_HOURS: int = 2  # 同类告警最短间隔（小时），建议与检测间隔一致
     QQ_ALERT_PAUSE_UNTIL: Optional[str] = None  # QQ告警暂停至该日期（不含），格式 YYYY-MM-DD，到达当日恢复
-    SCHEDULER_HOURS: str = "8,12,18,22"  # 已废弃
-    
-    # 邮件配置
-    EMAIL_ENABLED: bool = False
-    EMAIL_SMTP_HOST: Optional[str] = None
-    EMAIL_SMTP_PORT: int = 587
-    EMAIL_SMTP_USER: Optional[str] = None
-    EMAIL_SMTP_PASSWORD: Optional[str] = None
-    EMAIL_FROM: Optional[str] = None
-    EMAIL_TO: Optional[str] = None
     
     # QQ机器人（NoneBot + NapCat，仅群消息）
     QQ_BOT_ENABLED: bool = False
     QQ_BOT_API_URL: Optional[str] = None
     QQ_BOT_ID: str = "1270667498"  # 机器人登录QQ号，固定不可改
     QQ_BOT_GROUP_ID: Optional[str] = "6011223303"  # 告警消息发送目标群号，可修改
-    QQ_BOT_ACCESS_TOKEN: Optional[str] = None    
-    # QQ直推配置（QMsg）
-    QQ_NOTIFY_API_KEY: Optional[str] = None
 
     # 默认告警阈值
     DEFAULT_ALERT_THRESHOLD: float = 20.0

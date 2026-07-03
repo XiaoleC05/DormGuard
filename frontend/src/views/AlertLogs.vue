@@ -32,8 +32,8 @@
         </el-table-column>
         <el-table-column prop="alert_type" label="告警类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.alert_type === 'email' ? 'primary' : 'success'" size="small">
-              {{ row.alert_type === 'email' ? '邮件' : 'QQ' }}
+            <el-tag type="success" size="small">
+              {{ row.alert_type === 'email' ? '邮件(历史)' : 'QQ' }}
             </el-tag>
           </template>
         </el-table-column>

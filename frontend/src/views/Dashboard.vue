@@ -496,9 +496,7 @@ const saveRule = async () => {
     
     const submitData = {
       ...ruleForm.value,
-      room_id: ruleForm.value.room_id && ruleForm.value.room_id.trim() ? ruleForm.value.room_id.trim() : null,
-      email_enabled: false,
-      email_address: null
+      room_id: ruleForm.value.room_id && ruleForm.value.room_id.trim() ? ruleForm.value.room_id.trim() : null
     }
     
     if (alertRule.value) {

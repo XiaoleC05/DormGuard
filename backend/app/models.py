@@ -34,7 +34,7 @@ class AlertRule(Base):
     """
     告警规则表
     
-    存储单一宿舍的告警配置，包括阈值设置和告警方式（邮件/QQ）。
+    存储单一宿舍的告警配置，包括阈值设置和 QQ 告警开关。
     本项目仅支持单一宿舍监控，最多存在一条规则。
     """
     __tablename__ = "alert_rules"
@@ -44,12 +44,8 @@ class AlertRule(Base):
     room_id = Column(String(50), nullable=True, comment="房间ID（roomid），从西华大学电费系统API获取，用于查询该宿舍的电费数据，多宿舍监控必需")
     kthreshold = Column(Float, nullable=True, comment="空调告警阈值（度），当空调余量低于此值时触发告警")
     zthreshold = Column(Float, nullable=True, comment="照明告警阈值（度），当照明余量低于此值时触发告警")
-    threshold = Column(Float, nullable=True, comment="告警阈值（度），已废弃，保留用于兼容性，请使用kthreshold和zthreshold")
     enabled = Column(Boolean, default=True, nullable=False, index=True, comment="是否启用告警规则，False时不会触发任何告警")
-    email_enabled = Column(Boolean, default=False, nullable=False, comment="是否启用邮件告警，True时当余量低于阈值会发送邮件")
-    email_address = Column(String(255), nullable=True, comment="邮件告警接收邮箱地址，启用邮件告警时必须填写")
     qq_enabled = Column(Boolean, default=False, nullable=False, comment="是否启用QQ告警，True时当余量低于阈值会发送QQ消息")
-    qq_receiver_id = Column(String(50), nullable=True, comment="已废弃，告警群号改由 QQ_BOT_GROUP_ID 配置")
     last_alert_time = Column(DateTime, nullable=True, comment="最后告警时间，用于防止频繁告警，记录最近一次成功发送告警的时间")
     created_at = Column(DateTime, nullable=False, server_default=func.now(), comment="创建时间，规则创建的时间")
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now(), comment="更新时间，规则最后修改的时间")
@@ -71,7 +67,7 @@ class AlertLog(Base):
     alert_category = Column(String(20), nullable=True, comment="告警类别：ac（空调）/light（照明），标识是哪个类型的电费余量触发了告警")
     balance = Column(Float, nullable=False, comment="触发告警时的余量（度），记录告警触发时的实际电费余量")
     threshold = Column(Float, nullable=False, comment="告警阈值（度），记录触发告警时使用的阈值")
-    alert_type = Column(String(20), nullable=False, comment="告警类型：email（邮件告警）/qq（QQ告警），标识使用的告警方式")
+    alert_type = Column(String(20), nullable=False, comment="告警类型：qq（QQ告警）；历史数据可能含 email")
     alert_status = Column(String(20), nullable=False, comment="告警状态：success（发送成功）/failed（发送失败），标识告警是否成功发送")
     alert_message = Column(Text, nullable=True, comment="告警消息内容，记录实际发送的告警消息文本")
     created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True, comment="创建时间，告警发送的时间")
