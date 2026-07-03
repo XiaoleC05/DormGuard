@@ -4,6 +4,8 @@ services:
     container_name: napcat
     restart: unless-stopped
     network_mode: host
+    environment:
+      - NAPCAT_QUICK_ACCOUNT=${NAPCAT_QUICK_ACCOUNT:-1270667498}
     volumes:
       - /opt/napcat/QQ:/app/.config/QQ
       - /opt/napcat/config:/app/napcat/config
