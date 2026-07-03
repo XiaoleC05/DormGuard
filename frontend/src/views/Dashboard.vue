@@ -137,14 +137,6 @@
           <el-descriptions-item label="照明告警阈值（度）">
             {{ alertRule.zthreshold !== null && alertRule.zthreshold !== undefined ? alertRule.zthreshold.toFixed(2) : '未设置' }}
           </el-descriptions-item>
-          <el-descriptions-item label="邮件告警">
-            <el-tag :type="alertRule.email_enabled ? 'success' : 'info'">
-              {{ alertRule.email_enabled ? '启用' : '禁用' }}
-            </el-tag>
-            <span v-if="alertRule.email_enabled && alertRule.email_address" style="margin-left: 8px; font-size: 12px; color: #909399;">
-              {{ alertRule.email_address }}
-            </span>
-          </el-descriptions-item>
           <el-descriptions-item label="QQ告警">
             <el-tag :type="alertRule.qq_enabled ? 'success' : 'info'">
               {{ alertRule.qq_enabled ? '启用' : '禁用' }}
@@ -241,24 +233,6 @@
         </el-form-item>
         <el-form-item label="启用状态">
           <el-switch v-model="ruleForm.enabled" />
-        </el-form-item>
-        <el-form-item label="邮件告警">
-          <el-switch v-model="ruleForm.email_enabled" />
-        </el-form-item>
-        <el-form-item 
-          label="接收邮箱" 
-          v-if="ruleForm.email_enabled"
-          prop="email_address"
-        >
-          <el-input 
-            v-model="ruleForm.email_address" 
-            placeholder="请输入接收告警邮件的邮箱地址，多个邮箱用逗号分隔"
-            type="textarea"
-            :rows="2"
-          />
-          <div style="font-size: 12px; color: #909399; margin-top: 5px;">
-            多个邮箱地址请用逗号（,）分隔
-          </div>
         </el-form-item>
         <el-form-item label="QQ告警">
           <el-switch v-model="ruleForm.qq_enabled" />
@@ -483,37 +457,10 @@ const ruleForm = ref({
   kthreshold: 20.0,
   zthreshold: 20.0,
   enabled: true,
-  email_enabled: false,
-  email_address: '',
   qq_enabled: false
 })
 
-const formRules = {
-  email_address: [
-    { 
-      validator: (rule, value, callback) => {
-        if (ruleForm.value.email_enabled) {
-          if (!value || !value.trim()) {
-            callback(new Error('启用邮件告警时必须输入接收邮箱地址'))
-          } else {
-            const emails = value.split(',').map(e => e.trim()).filter(e => e)
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-            for (const email of emails) {
-              if (!emailRegex.test(email)) {
-                callback(new Error(`邮箱格式不正确: ${email}`))
-                return
-              }
-            }
-            callback()
-          }
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
-}
+const formRules = {}
 
 const loadQQConfig = async () => {
   try {
@@ -536,8 +483,6 @@ const editRule = () => {
     kthreshold: alertRule.value.kthreshold !== null && alertRule.value.kthreshold !== undefined ? alertRule.value.kthreshold : 20.0,
     zthreshold: alertRule.value.zthreshold !== null && alertRule.value.zthreshold !== undefined ? alertRule.value.zthreshold : 20.0,
     enabled: alertRule.value.enabled !== null && alertRule.value.enabled !== undefined ? alertRule.value.enabled : true,
-    email_enabled: alertRule.value.email_enabled !== null && alertRule.value.email_enabled !== undefined ? alertRule.value.email_enabled : false,
-    email_address: alertRule.value.email_address || '',
     qq_enabled: alertRule.value.qq_enabled !== null && alertRule.value.qq_enabled !== undefined ? alertRule.value.qq_enabled : false
   }
   showRuleDialog.value = true
@@ -549,14 +494,11 @@ const saveRule = async () => {
   try {
     await formRef.value.validate()
     
-    if (!ruleForm.value.email_enabled) {
-      ruleForm.value.email_address = ''
-    }
-    
     const submitData = {
       ...ruleForm.value,
       room_id: ruleForm.value.room_id && ruleForm.value.room_id.trim() ? ruleForm.value.room_id.trim() : null,
-      email_address: ruleForm.value.email_address && ruleForm.value.email_address.trim() ? ruleForm.value.email_address.trim() : null
+      email_enabled: false,
+      email_address: null
     }
     
     if (alertRule.value) {

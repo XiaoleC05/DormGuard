@@ -16,7 +16,6 @@ QQ_RELATED_KEYS: Set[str] = {
     "QQ_BOT_ENABLED",
     "QQ_BOT_API_URL",
     "QQ_BOT_GROUP_ID",
-    "QQ_BOT_ACCESS_TOKEN",
 }
 
 

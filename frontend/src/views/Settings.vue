@@ -24,12 +24,11 @@
         </el-form-item>
         <el-form-item label="OpenID">
           <el-input v-model="form.CRAWLER_OPENID" type="password" show-password />
+          <div class="field-hint">西华一卡通微信 OpenID，用于获取会话</div>
         </el-form-item>
         <el-form-item label="JSESSIONID">
           <el-input v-model="form.CRAWLER_JSESSIONID" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="Token">
-          <el-input v-model="form.CRAWLER_TOKEN" type="password" show-password />
+          <div class="field-hint">爬虫登录凭证，过期后系统会尝试用 OpenID 自动刷新</div>
         </el-form-item>
       </el-form>
     </el-card>
@@ -44,34 +43,16 @@
           <el-input-number v-model="alertCooldownHours" :min="1" :max="24" />
         </el-form-item>
         <el-form-item label="QQ告警暂停至">
-          <el-input v-model="form.QQ_ALERT_PAUSE_UNTIL" placeholder="YYYY-MM-DD，留空不暂停" />
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card shadow="hover" class="section">
-      <template #header>邮件通知</template>
-      <el-form label-width="160px">
-        <el-form-item label="启用邮件">
-          <el-switch v-model="emailEnabled" />
-        </el-form-item>
-        <el-form-item label="SMTP 主机">
-          <el-input v-model="form.EMAIL_SMTP_HOST" />
-        </el-form-item>
-        <el-form-item label="SMTP 端口">
-          <el-input v-model="form.EMAIL_SMTP_PORT" />
-        </el-form-item>
-        <el-form-item label="SMTP 用户">
-          <el-input v-model="form.EMAIL_SMTP_USER" />
-        </el-form-item>
-        <el-form-item label="SMTP 密码">
-          <el-input v-model="form.EMAIL_SMTP_PASSWORD" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="发件人">
-          <el-input v-model="form.EMAIL_FROM" />
-        </el-form-item>
-        <el-form-item label="收件人">
-          <el-input v-model="form.EMAIL_TO" />
+          <el-date-picker
+            v-model="qqAlertPauseUntil"
+            type="date"
+            placeholder="选择日期，留空表示不暂停"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            clearable
+            style="width: 100%"
+          />
+          <div class="field-hint">所选日期之前不发送 QQ 自动告警，到达当日恢复</div>
         </el-form-item>
       </el-form>
     </el-card>
@@ -86,13 +67,14 @@
           <el-switch v-model="qqBotEnabled" />
         </el-form-item>
         <el-form-item label="API 地址">
-          <el-input v-model="form.QQ_BOT_API_URL" />
+          <el-input v-model="form.QQ_BOT_API_URL" disabled />
+          <div class="field-hint">
+            本机 NoneBot HTTP 服务，后端通过此地址调用
+            <code>/api/send_group_msg</code> 与 <code>/api/get_status</code>
+          </div>
         </el-form-item>
         <el-form-item label="告警群号">
           <el-input v-model="form.QQ_BOT_GROUP_ID" placeholder="消息仅发送到此群" />
-        </el-form-item>
-        <el-form-item label="Access Token">
-          <el-input v-model="form.QQ_BOT_ACCESS_TOKEN" type="password" show-password />
         </el-form-item>
       </el-form>
     </el-card>
@@ -111,26 +93,17 @@ const form = reactive({
   CRAWLER_ROOM_ID: '',
   CRAWLER_OPENID: '',
   CRAWLER_JSESSIONID: '',
-  CRAWLER_TOKEN: '',
   SCHEDULER_INTERVAL_HOURS: '2',
   ALERT_COOLDOWN_HOURS: '2',
   QQ_ALERT_PAUSE_UNTIL: '',
-  EMAIL_ENABLED: 'false',
-  EMAIL_SMTP_HOST: '',
-  EMAIL_SMTP_PORT: '587',
-  EMAIL_SMTP_USER: '',
-  EMAIL_SMTP_PASSWORD: '',
-  EMAIL_FROM: '',
-  EMAIL_TO: '',
   QQ_BOT_ENABLED: 'false',
   QQ_BOT_API_URL: 'http://127.0.0.1:8080',
-  QQ_BOT_GROUP_ID: '6011223303',
-  QQ_BOT_ACCESS_TOKEN: ''
+  QQ_BOT_GROUP_ID: '6011223303'
 })
 
 const schedulerHours = ref(2)
 const alertCooldownHours = ref(2)
-const emailEnabled = ref(false)
+const qqAlertPauseUntil = ref('')
 const qqBotEnabled = ref(false)
 
 const loadSettings = async () => {
@@ -138,8 +111,11 @@ const loadSettings = async () => {
   Object.assign(form, data.settings)
   schedulerHours.value = Number(form.SCHEDULER_INTERVAL_HOURS || 2)
   alertCooldownHours.value = Number(form.ALERT_COOLDOWN_HOURS || 2)
-  emailEnabled.value = String(form.EMAIL_ENABLED).toLowerCase() === 'true'
+  qqAlertPauseUntil.value = form.QQ_ALERT_PAUSE_UNTIL || ''
   qqBotEnabled.value = String(form.QQ_BOT_ENABLED).toLowerCase() === 'true'
+  if (!form.QQ_BOT_API_URL) {
+    form.QQ_BOT_API_URL = 'http://127.0.0.1:8080'
+  }
 }
 
 const saveSettings = async () => {
@@ -149,7 +125,7 @@ const saveSettings = async () => {
       ...form,
       SCHEDULER_INTERVAL_HOURS: String(schedulerHours.value),
       ALERT_COOLDOWN_HOURS: String(alertCooldownHours.value),
-      EMAIL_ENABLED: emailEnabled.value ? 'true' : 'false',
+      QQ_ALERT_PAUSE_UNTIL: qqAlertPauseUntil.value || '',
       QQ_BOT_ENABLED: qqBotEnabled.value ? 'true' : 'false'
     })
     if (data.restart_required) {
@@ -187,5 +163,19 @@ onMounted(loadSettings)
 
 .section {
   margin-top: 16px;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+.field-hint code {
+  font-size: 11px;
+  background: #f4f4f5;
+  padding: 1px 4px;
+  border-radius: 3px;
 }
 </style>
