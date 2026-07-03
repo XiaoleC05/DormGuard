@@ -23,7 +23,7 @@
           <el-input v-model="form.CRAWLER_ROOM_ID" />
         </el-form-item>
         <el-form-item label="OpenID">
-          <el-input v-model="form.CRAWLER_OPENID" type="password" show-password />
+          <el-input v-model="form.CRAWLER_OPENID" />
           <div class="field-hint">西华一卡通微信 OpenID，用于获取会话</div>
         </el-form-item>
         <el-form-item label="JSESSIONID">
