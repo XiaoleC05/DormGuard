@@ -15,7 +15,7 @@
 
     <el-card shadow="hover">
       <template #header>爬虫与宿舍</template>
-      <el-form label-width="160px">
+      <el-form label-width="160px" class="mobile-form">
         <el-form-item label="宿舍号">
           <el-input v-model="form.CRAWLER_DORM_NUMBER" />
         </el-form-item>
@@ -35,7 +35,7 @@
 
     <el-card shadow="hover" class="section">
       <template #header>调度与告警</template>
-      <el-form label-width="160px">
+      <el-form label-width="160px" class="mobile-form">
         <el-form-item label="爬虫间隔(小时)">
           <el-input-number v-model="schedulerHours" :min="1" :max="24" />
         </el-form-item>
@@ -59,7 +59,7 @@
 
     <el-card shadow="hover" class="section">
       <template #header>QQ 机器人</template>
-      <el-form label-width="160px">
+      <el-form label-width="160px" class="mobile-form">
         <el-form-item label="机器人 QQ">
           <el-input model-value="1270667498" disabled />
         </el-form-item>
@@ -155,6 +155,23 @@ onMounted(loadSettings)
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .settings-page {
+    max-width: none;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header .el-button {
+    width: 100%;
+  }
 }
 
 .tip {

@@ -55,6 +55,8 @@ cp "$APP_DIR/deploy/systemd/dormguard-healthcheck.service" /etc/systemd/system/
 cp "$APP_DIR/deploy/systemd/dormguard-healthcheck.timer" /etc/systemd/system/
 cp "$APP_DIR/deploy/nginx/oxelia51.com.conf" /etc/nginx/sites-available/oxelia51.com
 ln -sf /etc/nginx/sites-available/oxelia51.com /etc/nginx/sites-enabled/oxelia51.com
+cp "$APP_DIR/deploy/nginx/default-ip.conf" /etc/nginx/sites-available/default-ip
+ln -sf /etc/nginx/sites-available/default-ip /etc/nginx/sites-enabled/default-ip
 rm -f /etc/nginx/sites-enabled/masterc.cn
 
 systemctl stop dorm-backend dorm-nonebot 2>/dev/null || true

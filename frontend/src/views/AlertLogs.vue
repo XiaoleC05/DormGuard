@@ -11,6 +11,7 @@
         </div>
       </template>
       
+      <div class="table-scroll">
       <el-table :data="logs" v-loading="loading" stripe>
         <el-table-column prop="dorm_number" label="宿舍号" width="100" />
         <el-table-column prop="alert_category" label="类别" width="100">
@@ -51,6 +52,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
   </div>
 </template>
@@ -97,5 +99,17 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .alert-logs-page {
+    max-width: none;
+  }
+
+  .card-header .el-button {
+    width: 100%;
+  }
 }
 </style>

@@ -122,7 +122,7 @@
         </div>
       </template>
       <div v-if="alertRule" class="alert-rule-content">
-        <el-descriptions :column="2" border>
+        <el-descriptions :column="descColumns" border>
           <el-descriptions-item label="房间ID（room_id）">
             {{ alertRule.room_id || '未配置' }}
           </el-descriptions-item>
@@ -148,14 +148,14 @@
           <el-descriptions-item label="机器人QQ">
             <span>1270667498</span>
           </el-descriptions-item>
-          <el-descriptions-item label="QQ机器人状态" :span="2">
+          <el-descriptions-item label="QQ机器人状态" :span="descColumns">
             <el-tag :type="qqStatusTagType">{{ qqStatusText }}</el-tag>
             <el-button link type="primary" style="margin-left: 8px" :loading="qqStatusLoading" @click="loadQQStatus">
               刷新
             </el-button>
           </el-descriptions-item>
         </el-descriptions>
-        <div style="margin-top: 15px; text-align: right;">
+        <div class="rule-actions">
           <el-button type="primary" @click="editRule">编辑规则</el-button>
         </div>
       </div>
@@ -292,6 +292,7 @@ const chartViewMode = ref('monthly') // 'monthly' 或 'daily'
 const selectedMonth = ref(dayjs().format('YYYY-MM'))
 let chartInstance = null
 let resizeHandler = null
+const descColumns = ref(typeof window !== 'undefined' && window.innerWidth < 768 ? 1 : 2)
 
 const DEFAULT_THRESHOLD = 20
 
@@ -686,6 +687,7 @@ onMounted(async () => {
   
   // 响应式调整图表
   resizeHandler = () => {
+    descColumns.value = window.innerWidth < 768 ? 1 : 2
     chartInstance?.resize()
   }
   window.addEventListener('resize', resizeHandler)
@@ -943,6 +945,11 @@ onUnmounted(() => {
   text-align: center;
 }
 
+.rule-actions {
+  margin-top: 15px;
+  text-align: right;
+}
+
 .chart-container {
   height: 450px;
   width: 100%;
@@ -971,7 +978,12 @@ onUnmounted(() => {
 
   .page-actions {
     width: 100%;
-    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .page-actions .el-button {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 120px;
   }
 
   .card-header {
@@ -983,7 +995,25 @@ onUnmounted(() => {
   .chart-controls {
     width: 100%;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .chart-controls .el-date-editor {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .alert-rule-content :deep(.el-descriptions__label) {
+    width: 120px !important;
+  }
+
+  .rule-actions {
+    text-align: center;
+  }
+
+  .rule-actions .el-button {
+    width: 100%;
   }
 
   .balance-value {

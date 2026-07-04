@@ -58,14 +58,16 @@ const handleLogin = async () => {
 <style scoped>
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .login-card {
-  width: 380px;
+  width: min(380px, 100%);
   padding: 8px;
 }
 

@@ -20,6 +20,7 @@
         </div>
       </template>
       
+      <div class="table-scroll">
       <el-table :data="records" v-loading="loading" stripe>
         <el-table-column prop="dorm_number" label="宿舍号" width="100" fixed="left" />
         <el-table-column prop="record_time" label="记录时间" width="180">
@@ -68,7 +69,9 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
       
+      <div class="mobile-pagination">
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
@@ -79,6 +82,7 @@
         @current-change="handlePageChange"
         style="margin-top: 20px"
       />
+      </div>
     </el-card>
   </div>
 </template>
@@ -176,6 +180,19 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .records-page,
+  .alert-logs-page {
+    max-width: none;
+  }
+
+  .card-header .el-button {
+    width: 100%;
+  }
 }
 
 .balance-low {

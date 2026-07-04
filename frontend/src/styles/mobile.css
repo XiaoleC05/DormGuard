@@ -1,0 +1,52 @@
+/* 全局移动端适配 */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll :deep(.el-table) {
+  min-width: 640px;
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding: 12px !important;
+  }
+
+  .mobile-form :deep(.el-form-item__label) {
+    width: 100% !important;
+    justify-content: flex-start;
+    text-align: left;
+    padding-bottom: 4px;
+  }
+
+  .mobile-form :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
+
+  .mobile-pagination :deep(.el-pagination) {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+
+  .mobile-pagination :deep(.el-pagination__sizes),
+  .mobile-pagination :deep(.el-pagination__jump) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-main {
+    padding: 10px !important;
+  }
+}
