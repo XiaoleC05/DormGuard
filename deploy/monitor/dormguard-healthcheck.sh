@@ -27,11 +27,12 @@ load_bot_token() {
 check_nonebot() {
   local token="$1"
   local body
+  local nonebot_port="${NONEBOT_PORT:-8089}"
   local curl_args=(-fsS --max-time 10)
   if [ -n "$token" ]; then
     curl_args+=(-H "Authorization: Bearer $token")
   fi
-  body=$(curl "${curl_args[@]}" http://127.0.0.1:8080/api/get_status) || return 1
+  body=$(curl "${curl_args[@]}" "http://127.0.0.1:${nonebot_port}/api/get_status") || return 1
   python3 -c "import json,sys; d=json.loads(sys.argv[1]); sys.exit(0 if d.get('status')=='ok' else 1)" "$body"
 }
 

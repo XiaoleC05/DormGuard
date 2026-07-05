@@ -7,7 +7,7 @@
       {
         "name": "NoneBot",
         "enable": true,
-        "url": "ws://localhost:8080/onebot/v11/ws",
+        "url": "ws://127.0.0.1:8089/onebot/v11/ws",
         "messagePostFormat": "string",
         "reportSelfMessage": false,
         "token": "",

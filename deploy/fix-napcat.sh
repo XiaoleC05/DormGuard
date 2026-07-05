@@ -2,7 +2,8 @@
 set -euo pipefail
 
 NB_DIR="/opt/DormGuard/backend/nonebot_bot"
-WS_URL="ws://127.0.0.1:8080/onebot/v11/ws"
+NONEBOT_PORT="${NONEBOT_PORT:-8089}"
+WS_URL="ws://127.0.0.1:${NONEBOT_PORT}/onebot/v11/ws"
 COMPOSE_FILE="/opt/DormGuard/deploy/docker/napcat-compose.yml"
 QQ_ACCOUNT="${QQ_BOT_ACCOUNT:-1270667498}"
 
@@ -10,7 +11,7 @@ echo "[1] NoneBot .env (仅本机监听)"
 mkdir -p "$NB_DIR" /opt/napcat/QQ /opt/napcat/config
 cat > "$NB_DIR/.env" <<EOF
 HOST=127.0.0.1
-PORT=8080
+PORT=${NONEBOT_PORT}
 EOF
 
 echo "[2] Restart NoneBot"
@@ -65,7 +66,7 @@ CURL_HEADERS=()
 if [ -n "$BOT_TOKEN" ]; then
   CURL_HEADERS=(-H "Authorization: Bearer $BOT_TOKEN")
 fi
-STATUS=$(curl -s "${CURL_HEADERS[@]}" http://127.0.0.1:8080/api/get_status || true)
+STATUS=$(curl -s "${CURL_HEADERS[@]}" "http://127.0.0.1:${NONEBOT_PORT}/api/get_status" || true)
 echo "$STATUS"
 if echo "$STATUS" | grep -q '"status":"ok"'; then
   echo "NapCat connected"
