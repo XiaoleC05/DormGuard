@@ -59,8 +59,14 @@ def create_access_token(username: str) -> str:
 
 
 def verify_access_token(token: str) -> Optional[str]:
+    # DormGuard 自研 token 格式为 {payload_b64}.{hmac_signature}（2 段）。
+    # 拒绝标准 JWT 格式（3 段 {header}.{payload}.{signature}），
+    # 防止未来误用标准 JWT 库时 alg=none 攻击绕过签名校验。
+    parts = token.split(".")
+    if len(parts) != 2:
+        return None
     try:
-        payload_b64, signature = token.rsplit(".", 1)
+        payload_b64, signature = parts
     except ValueError:
         return None
     if not hmac.compare_digest(_sign_payload(payload_b64), signature):

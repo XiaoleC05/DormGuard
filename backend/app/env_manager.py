@@ -1,10 +1,19 @@
 """读写 backend/.env，供管理页更新配置。"""
+import fcntl
 from pathlib import Path
 from typing import Dict
 
 from app.auth import MANAGEABLE_ENV_KEYS, SENSITIVE_ENV_KEYS
 
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+_LOCK_PATH = Path(__file__).resolve().parent.parent / ".env.lock"
+
+
+def _acquire_lock():
+    """获取文件排他锁，防止并发写 .env 导致数据损坏。"""
+    lock_file = open(_LOCK_PATH, "w")
+    fcntl.flock(lock_file, fcntl.LOCK_EX)
+    return lock_file
 
 
 def _parse_env_lines(text: str) -> list[str]:
@@ -47,27 +56,32 @@ def write_env_values(updates: Dict[str, str]) -> None:
     if not filtered:
         return
 
-    lines: list[str] = []
-    if ENV_PATH.exists():
-        lines = _parse_env_lines(ENV_PATH.read_text(encoding="utf-8"))
+    lock = _acquire_lock()
+    try:
+        lines: list[str] = []
+        if ENV_PATH.exists():
+            lines = _parse_env_lines(ENV_PATH.read_text(encoding="utf-8"))
 
-    existing_keys = set()
-    new_lines: list[str] = []
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            new_lines.append(line)
-            continue
-        key, _ = stripped.split("=", 1)
-        key = key.strip()
-        if key in filtered:
-            new_lines.append(f"{key}={filtered[key]}")
-            existing_keys.add(key)
-        else:
-            new_lines.append(line)
+        existing_keys = set()
+        new_lines: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                new_lines.append(line)
+                continue
+            key, _ = stripped.split("=", 1)
+            key = key.strip()
+            if key in filtered:
+                new_lines.append(f"{key}={filtered[key]}")
+                existing_keys.add(key)
+            else:
+                new_lines.append(line)
 
-    for key, value in filtered.items():
-        if key not in existing_keys:
-            new_lines.append(f"{key}={value}")
+        for key, value in filtered.items():
+            if key not in existing_keys:
+                new_lines.append(f"{key}={value}")
 
-    ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
