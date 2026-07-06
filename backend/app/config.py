@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # 定时任务配置
     SCHEDULER_INTERVAL_HOURS: int = 2  # 爬虫与告警检测间隔（小时）
     ALERT_COOLDOWN_HOURS: int = 2  # 同类告警最短间隔（小时），建议与检测间隔一致
+    CRAWLER_ALERT_THRESHOLD: float = 20.0  # 低余额告警阈值（元），前端读取用于标红
     QQ_ALERT_PAUSE_UNTIL: Optional[str] = None  # QQ告警暂停至该日期（不含），格式 YYYY-MM-DD，到达当日恢复
     
     # QQ机器人（NoneBot + NapCat，仅群消息）
