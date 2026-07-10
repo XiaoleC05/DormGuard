@@ -94,7 +94,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("username", username)
-		c.Set("role", "admin") // JWT 认证的登录者即管理员
+		// DormGuard 褰撳墠浠呯鐞嗗憳浣跨敤锛屾湭鏉ヨ嫢鏀寔鏅€氱敤鎴烽渶浠?JWT claims 璇?role
+		c.Set("role", "admin")
 		c.Next()
 	}
 }
